@@ -9,10 +9,10 @@ type GameConfig struct {
 	Height int `json:"height"`
 }
 
-// The `drop_piece` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
-const DropPieceCmd cg.CommandName = "drop_piece"
+// The `drop_token` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
+const DropTokenCmd cg.CommandName = "drop_token"
 
-type DropPieceCmdData struct {
+type DropTokenCmdData struct {
 	// 0 <= column < config.width
 	Column int `json:"column"`
 }
@@ -29,7 +29,7 @@ type StartEventData struct {
 const GridEvent cg.EventName = "grid"
 
 type GridEventData struct {
-	// The cells of the grid as rows inside of columns.
+	// The cells of the grid as columns (left to right) inside of rows (top to bottom).
 	Cells [][]Cell `json:"cells"`
 }
 

@@ -39,9 +39,9 @@ docker run -d --restart on-failure -p <port-on-host-machine>:8080 --name connect
 1. You receive a `start` event when a second player joins, which includes your color ('yellow' or 'red').
 2. You regularly receive a `grid` event, which includes the current state of the grid.
 3. You receive a `turn` event, which includes the next sign to be placed.
-4. When it is your turn you can send a `drop_token` event with the column in which you want to drop your token.
+4. When it is your turn you can send a `drop_token` command with the column in which you want to drop your token.
 5. When the game is complete you will receive a `game_over` event, which includes which player wins and which cells form the winning line. Otherwise go to 3.
-6. You will receive an `invalid_action` event, if you try to do something that's not allowed like dropping a piece when it is not your turn.
+6. You will receive an `invalid_action` event, if you try to do something that's not allowed like dropping a token when it is not your turn.
 
 ## Building
 

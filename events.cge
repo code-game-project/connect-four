@@ -8,8 +8,8 @@ config {
 	height: int
 }
 
-// The `drop_piece` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
-command drop_piece {
+// The `drop_token` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
+command drop_token {
 	// 0 <= column < config.width
 	column: int
 }
@@ -22,7 +22,7 @@ event start {
 
 // The game grid.
 event grid {
-	// The cells of the grid as rows inside of columns.
+	// The cells of the grid as columns (left to right) inside of rows (top to bottom).
 	cells: list<list<cell>>
 }
 

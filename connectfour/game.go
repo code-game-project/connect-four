@@ -15,6 +15,8 @@ type Game struct {
 	redPlayer    *cg.Player
 	currentTurn  Color
 
+	running bool
+
 	grid [][]Cell
 }
 
@@ -31,11 +33,11 @@ func NewGame(cgGame *cg.Game, config GameConfig) *Game {
 	cgGame.OnPlayerJoined = game.onPlayerJoined
 	cgGame.OnPlayerSocketConnected = game.onPlayerSocketConnected
 
-	game.grid = make([][]Cell, config.Width)
-	for col := range game.grid {
-		game.grid[col] = make([]Cell, config.Height)
-		for row := range game.grid[col] {
-			game.grid[col][row] = Cell{
+	game.grid = make([][]Cell, config.Height)
+	for row := range game.grid {
+		game.grid[row] = make([]Cell, config.Width)
+		for col := range game.grid[row] {
+			game.grid[row][col] = Cell{
 				Row:    row,
 				Column: col,
 				Color:  ColorNone,
@@ -92,6 +94,7 @@ func (g *Game) start() {
 			g.redPlayer.Id:    ColorRed,
 		},
 	})
+	g.running = true
 	g.sendBoard()
 	g.turn()
 }
@@ -123,8 +126,64 @@ func (g *Game) Run() {
 	}
 }
 
+func (g *Game) dropToken(player *cg.Player, data DropTokenCmdData) {
+	if (g.yellowPlayer == player && g.currentTurn != ColorYellow) || (g.redPlayer == player && g.currentTurn != ColorRed) {
+		player.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: "It is not your turn.",
+		})
+		return
+	}
+
+	err := g.dropInColumn(g.currentTurn, data.Column)
+	if err != nil {
+		player.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	g.sendBoard()
+
+	if !g.checkDone() {
+		g.turn()
+	}
+}
+
+func (g *Game) dropInColumn(color Color, column int) error {
+	if column < 0 || column >= g.config.Width {
+		return fmt.Errorf("Column out of range. The grid only consists of %d columns.", g.config.Width)
+	}
+
+	for row := g.config.Height - 1; row >= 0; row-- {
+		if g.grid[row][column].Color == ColorNone {
+			g.grid[row][column].Color = color
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Column %d is already full.", column)
+}
+
+func (g *Game) checkDone() bool {
+	return false
+}
+
 func (g *Game) handleCommand(origin *cg.Player, cmd cg.Command) {
+	if !g.running {
+		origin.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: "The game is not running.",
+		})
+		return
+	}
 	switch cmd.Name {
+	case DropTokenCmd:
+		var data DropTokenCmdData
+		err := cmd.UnmarshalData(&data)
+		if err != nil {
+			origin.Log.ErrorData(cmd, "invalid command data")
+			return
+		}
+		g.dropToken(origin, data)
 	default:
 		origin.Log.ErrorData(cmd, fmt.Sprintf("unexpected command: %s", cmd.Name))
 	}
