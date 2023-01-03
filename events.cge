@@ -1,0 +1,63 @@
+name connect_four
+version 0.4
+
+config {
+	// The width of the game grid. default = 7
+	width: int,
+	// The height of the game grid. default = 6
+	height: int
+}
+
+// The `drop_piece` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
+command drop_piece {
+	// 0 <= column < config.width
+	column: int
+}
+
+// The `start` event is sent to all players when the game begins.
+event start {
+	// A map of player IDs mapped to their respective token colors.
+	colors: map<color>
+}
+
+// The game grid.
+event grid {
+	// The cells of the grid as rows inside of columns.
+	cells: list<list<cell>>
+}
+
+// The 'invalid_action' event notifies the player that their action was not allowed.
+event invalid_action {
+	// The message containing details on what the player did wrong.
+	message: string
+}
+
+// The `turn` event is sent to all players when it is the next player's turn.
+event turn {
+	// The sign of the player whose turn it is now.
+	color: color
+}
+
+event game_over {
+	// The color of the winner.
+	winner_color: color,
+	// The four cells which form a line.
+	winning_line: list<cell>
+}
+
+// A cell on the game grid.
+type cell {
+	row: int,
+	column: int,
+	color: color
+}
+
+// A token color.
+enum color {
+	// No color. Used for empty cells.
+	none,
+	// Yellow drops the first token.
+	yellow,
+	// Red drops the second token.
+	red
+}
