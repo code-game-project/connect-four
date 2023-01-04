@@ -203,19 +203,25 @@ func (g *Game) checkLine(row, col, dr, dc int) bool {
 		return false
 	}
 
-	if row+3*dr < 0 || row+3*dr >= g.config.Height || col+3*dc < 0 || col+3*dc >= g.config.Width {
+	if row+(g.config.WinLength-1)*dr < 0 || row+(g.config.WinLength-1)*dr >= g.config.Height || col+(g.config.WinLength-1)*dc < 0 || col+(g.config.WinLength-1)*dc >= g.config.Width {
 		return false
 	}
 
-	if g.grid[row+1*dr][col+1*dc].Color != color || g.grid[row+2*dr][col+2*dc].Color != color || g.grid[row+3*dr][col+3*dc].Color != color {
-		return false
+	winningLine := make([]Cell, g.config.WinLength)
+	winningLine[0] = g.grid[row][col]
+
+	for i := 1; i < g.config.WinLength; i++ {
+		if g.grid[row+i*dr][col+i*dc].Color != color {
+			return false
+		}
+		winningLine[i] = g.grid[row+i*dr][col+i*dc]
 	}
 
-	g.gameOver(g.grid[row][col], g.grid[row+1*dr][col+1*dc], g.grid[row+2*dr][col+2*dc], g.grid[row+3*dr][col+3*dc])
+	g.gameOver(winningLine)
 	return true
 }
 
-func (g *Game) gameOver(cells ...Cell) {
+func (g *Game) gameOver(cells []Cell) {
 	g.cg.Send(GameOverEvent, GameOverEventData{
 		WinnerColor: g.currentTurn,
 		WinningLine: cells,

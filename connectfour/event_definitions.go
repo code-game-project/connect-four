@@ -3,10 +3,12 @@ package connectfour
 import "github.com/code-game-project/go-server/cg"
 
 type GameConfig struct {
-	// The width of the game grid. default = 7
+	// The width of the game grid. min = 3, default = 7
 	Width int `json:"width"`
-	// The height of the game grid. default = 6
+	// The height of the game grid. min = 3, default = 6
 	Height int `json:"height"`
+	// The number of tokens, which form a winning line. min = 2, default = 4
+	WinLength int `json:"win_length"`
 }
 
 // The `drop_token` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.

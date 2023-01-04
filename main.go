@@ -50,11 +50,14 @@ func main() {
 			cgGame.Log.Error("Failed to unmarshal game config: %s", err)
 		}
 
-		if gameConfig.Width <= 0 {
+		if gameConfig.Width < 3 {
 			gameConfig.Width = 7
 		}
-		if gameConfig.Height <= 0 {
+		if gameConfig.Height < 3 {
 			gameConfig.Height = 6
+		}
+		if gameConfig.WinLength < 2 {
+			gameConfig.WinLength = 4
 		}
 
 		cgGame.SetConfig(gameConfig)
