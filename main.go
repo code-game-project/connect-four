@@ -35,7 +35,7 @@ func main() {
 		DisplayName:             "Connect 4",
 		Version:                 "0.1",
 		Description:             "Drop colored tokens into a grid. You win when you manage to form a horizontal, vertical or diagonal line of four tokens.",
-		RepositoryURL:           "github.com/code-game-project/connect-four",
+		RepositoryURL:           "https://github.com/code-game-project/connect-four",
 		Port:                    port,
 		CGEFilepath:             "events.cge",
 		DeleteInactiveGameDelay: 1 * time.Hour,
