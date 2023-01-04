@@ -6,19 +6,27 @@ config {
 	width: int,
 	// The height of the game grid. min = 3, default = 6
 	height: int,
-	// The number of tokens, which form a winning line. min = 2, default = 4
-	win_length: int
+	// The number of discs, which form a winning line. min = 2, default = 4
+	win_length: int,
+	// The rule variation to use. default: original
+	variation: variation
 }
 
-// The `drop_token` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
-command drop_token {
+// The `drop_disc` command can be sent to drop a disc into the game grid. Only allowed when it is the current player's turn.
+command drop_disc {
+	// 0 <= column < config.width
+	column: int
+}
+
+// The `pop_out` command can be sent to remove a disc of your color from the bottom of the grid. Only available if config.variation = pop_out.
+command pop_out {
 	// 0 <= column < config.width
 	column: int
 }
 
 // The `start` event is sent to all players when the game begins.
 event start {
-	// A map of player IDs mapped to their respective token colors.
+	// A map of player IDs mapped to their respective disc colors.
 	colors: map<color>
 }
 
@@ -54,12 +62,19 @@ type cell {
 	color: color
 }
 
-// A token color.
+// A disc color.
 enum color {
 	// No color. Used for empty cells.
 	none,
-	// Yellow drops the first token.
-	yellow,
-	// Red drops the second token.
-	red
+	// A drops the first disc.
+	a,
+	// B drops the second disc.
+	b
+}
+
+enum variation {
+	// The original Connect 4 game.
+	original,
+	// Instead of dropping a disc into a grid a player may choose to remove a disc of their own color from the bottom.
+	pop_out
 }

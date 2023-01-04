@@ -33,8 +33,8 @@ func main() {
 
 	server := cg.NewServer("connect-four", cg.ServerConfig{
 		DisplayName:             "Connect 4",
-		Version:                 "0.1",
-		Description:             "Drop colored tokens into a grid. You win when you manage to form a horizontal, vertical or diagonal line of four tokens.",
+		Version:                 "0.2",
+		Description:             "Drop colored discs into a grid. You win when you manage to form a horizontal, vertical or diagonal line of four discs.",
 		RepositoryURL:           "https://github.com/code-game-project/connect-four",
 		Port:                    port,
 		CGEFilepath:             "events.cge",
@@ -58,6 +58,9 @@ func main() {
 		}
 		if gameConfig.WinLength < 2 {
 			gameConfig.WinLength = 4
+		}
+		if gameConfig.Variation != connectfour.VariationPopOut {
+			gameConfig.Variation = connectfour.VariationOriginal
 		}
 
 		cgGame.SetConfig(gameConfig)

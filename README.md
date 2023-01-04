@@ -2,7 +2,7 @@
 ![CodeGame Version](https://img.shields.io/badge/CodeGame-v0.7-orange)
 ![CGE Version](https://img.shields.io/badge/CGE-v0.4-green)
 
-Drop colored tokens into a grid. You win when you manage to form a horizontal, vertical or diagonal line of four tokens.
+Drop colored discs into a grid. You win when you manage to form a horizontal, vertical or diagonal line of four discs.
 
 ## Known instances
 
@@ -36,12 +36,20 @@ docker run -d --restart on-failure -p <port-on-host-machine>:8080 --name connect
 
 ## Event Flow
 
-1. You receive a `start` event when a second player joins, which includes your color ('yellow' or 'red').
+1. You receive a `start` event when a second player joins, which includes your color ('a' or 'b').
 2. You regularly receive a `grid` event, which includes the current state of the grid.
 3. You receive a `turn` event, which includes the next sign to be placed.
-4. When it is your turn you can send a `drop_token` command with the column in which you want to drop your token.
+4. When it is your turn you can send a `drop_disc` command with the column in which you want to drop your disc.
 5. When the game is complete you will receive a `game_over` event, which includes which player wins and which cells form the winning line. Otherwise go to 3.
-6. You will receive an `invalid_action` event, if you try to do something that's not allowed like dropping a token when it is not your turn.
+6. You will receive an `invalid_action` event, if you try to do something that's not allowed like dropping a disc when it is not your turn.
+
+### Rule variations
+
+Rule variations can be selected by setting the `variation` config option.
+
+#### Pop out
+
+- You can send a `pop_out` command instead of a `drop_disc` command to remove a disc of your own color from the bottom of the grid.
 
 ## Building
 

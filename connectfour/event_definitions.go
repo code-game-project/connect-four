@@ -7,14 +7,24 @@ type GameConfig struct {
 	Width int `json:"width"`
 	// The height of the game grid. min = 3, default = 6
 	Height int `json:"height"`
-	// The number of tokens, which form a winning line. min = 2, default = 4
+	// The number of discs, which form a winning line. min = 2, default = 4
 	WinLength int `json:"win_length"`
+	// The rule variation to use. default: original
+	Variation Variation `json:"variation"`
 }
 
-// The `drop_token` command can be sent to drop a token into the game grid. Only allowed when it is the current player's turn.
-const DropTokenCmd cg.CommandName = "drop_token"
+// The `drop_disc` command can be sent to drop a disc into the game grid. Only allowed when it is the current player's turn.
+const DropDiscCmd cg.CommandName = "drop_disc"
 
-type DropTokenCmdData struct {
+type DropDiscCmdData struct {
+	// 0 <= column < config.width
+	Column int `json:"column"`
+}
+
+// The `pop_out` command can be sent to remove a disc of your color from the bottom of the grid. Only available if config.variation = pop_out.
+const PopOutCmd cg.CommandName = "pop_out"
+
+type PopOutCmdData struct {
 	// 0 <= column < config.width
 	Column int `json:"column"`
 }
@@ -23,7 +33,7 @@ type DropTokenCmdData struct {
 const StartEvent cg.EventName = "start"
 
 type StartEventData struct {
-	// A map of player IDs mapped to their respective token colors.
+	// A map of player IDs mapped to their respective disc colors.
 	Colors map[string]Color `json:"colors"`
 }
 
@@ -67,14 +77,23 @@ type Cell struct {
 	Color  Color `json:"color"`
 }
 
-// A token color.
+// A disc color.
 type Color string
 
 const (
 	// No color. Used for empty cells.
 	ColorNone Color = "none"
-	// Yellow drops the first token.
-	ColorYellow Color = "yellow"
-	// Red drops the second token.
-	ColorRed Color = "red"
+	// A drops the first disc.
+	ColorA Color = "a"
+	// B drops the second disc.
+	ColorB Color = "b"
+)
+
+type Variation string
+
+const (
+	// The original Connect 4 game.
+	VariationOriginal Variation = "original"
+	// Instead of dropping a disc into a grid a player may choose to remove a disc of their own color from the bottom.
+	VariationPopOut Variation = "pop_out"
 )

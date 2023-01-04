@@ -11,9 +11,9 @@ type Game struct {
 	cg     *cg.Game
 	config GameConfig
 
-	yellowPlayer *cg.Player
-	redPlayer    *cg.Player
-	currentTurn  Color
+	playerA     *cg.Player
+	playerB     *cg.Player
+	currentTurn Color
 
 	running bool
 
@@ -24,7 +24,7 @@ func NewGame(cgGame *cg.Game, config GameConfig) *Game {
 	game := &Game{
 		cg:          cgGame,
 		config:      config,
-		currentTurn: ColorRed, // Switched before the game starts. The first token is dropped by yellow.
+		currentTurn: ColorB, // Switched before the game starts. The first disc is dropped by A.
 	}
 
 	cgGame.OnPlayerLeft = func(_ *cg.Player) {
@@ -49,7 +49,7 @@ func NewGame(cgGame *cg.Game, config GameConfig) *Game {
 }
 
 func (g *Game) onPlayerSocketConnected(player *cg.Player, socket *cg.GameSocket) {
-	if g.yellowPlayer == nil || g.redPlayer == nil {
+	if g.playerA == nil || g.playerB == nil {
 		return
 	}
 	if player.SocketCount() == 1 {
@@ -58,8 +58,8 @@ func (g *Game) onPlayerSocketConnected(player *cg.Player, socket *cg.GameSocket)
 
 	socket.Send(StartEvent, StartEventData{
 		Colors: map[string]Color{
-			g.yellowPlayer.Id: ColorYellow,
-			g.redPlayer.Id:    ColorRed,
+			g.playerA.Id: ColorA,
+			g.playerB.Id: ColorB,
 		},
 	})
 
@@ -73,19 +73,19 @@ func (g *Game) onPlayerSocketConnected(player *cg.Player, socket *cg.GameSocket)
 }
 
 func (g *Game) onPlayerJoined(player *cg.Player) {
-	if g.yellowPlayer != nil {
-		g.redPlayer = player
-	} else if g.redPlayer != nil {
-		g.yellowPlayer = player
+	if g.playerA != nil {
+		g.playerB = player
+	} else if g.playerB != nil {
+		g.playerA = player
 	} else {
 		if rand.Intn(2) == 1 {
-			g.yellowPlayer = player
+			g.playerA = player
 		} else {
-			g.redPlayer = player
+			g.playerB = player
 		}
 	}
 
-	if g.yellowPlayer != nil && g.redPlayer != nil {
+	if g.playerA != nil && g.playerB != nil {
 		g.start()
 	}
 }
@@ -93,8 +93,8 @@ func (g *Game) onPlayerJoined(player *cg.Player) {
 func (g *Game) start() {
 	g.cg.Send(StartEvent, StartEventData{
 		Colors: map[string]Color{
-			g.yellowPlayer.Id: ColorYellow,
-			g.redPlayer.Id:    ColorRed,
+			g.playerA.Id: ColorA,
+			g.playerB.Id: ColorB,
 		},
 	})
 	g.running = true
@@ -103,10 +103,10 @@ func (g *Game) start() {
 }
 
 func (g *Game) turn() {
-	if g.currentTurn == ColorYellow {
-		g.currentTurn = ColorRed
+	if g.currentTurn == ColorA {
+		g.currentTurn = ColorB
 	} else {
-		g.currentTurn = ColorYellow
+		g.currentTurn = ColorA
 	}
 	g.cg.Send(TurnEvent, TurnEventData{
 		Color: g.currentTurn,
@@ -129,8 +129,8 @@ func (g *Game) Run() {
 	}
 }
 
-func (g *Game) dropToken(player *cg.Player, data DropTokenCmdData) {
-	if (g.yellowPlayer == player && g.currentTurn != ColorYellow) || (g.redPlayer == player && g.currentTurn != ColorRed) {
+func (g *Game) dropDisc(player *cg.Player, data DropDiscCmdData) {
+	if (g.playerA == player && g.currentTurn != ColorA) || (g.playerB == player && g.currentTurn != ColorB) {
 		player.Send(InvalidActionEvent, InvalidActionEventData{
 			Message: "It is not your turn.",
 		})
@@ -138,6 +138,36 @@ func (g *Game) dropToken(player *cg.Player, data DropTokenCmdData) {
 	}
 
 	err := g.dropInColumn(g.currentTurn, data.Column)
+	if err != nil {
+		player.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	g.sendBoard()
+
+	if !g.checkDone() {
+		g.turn()
+	}
+}
+
+func (g *Game) popOutDisc(player *cg.Player, data PopOutCmdData) {
+	if g.config.Variation != VariationPopOut {
+		player.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: fmt.Sprintf("`pop_out` is not allowed in rule variation `%s`.", g.config.Variation),
+		})
+		return
+	}
+
+	if (g.playerA == player && g.currentTurn != ColorA) || (g.playerB == player && g.currentTurn != ColorB) {
+		player.Send(InvalidActionEvent, InvalidActionEventData{
+			Message: "It is not your turn.",
+		})
+		return
+	}
+
+	err := g.popOutInColumn(data.Column)
 	if err != nil {
 		player.Send(InvalidActionEvent, InvalidActionEventData{
 			Message: err.Error(),
@@ -165,6 +195,23 @@ func (g *Game) dropInColumn(color Color, column int) error {
 	}
 
 	return fmt.Errorf("Column %d is already full.", column)
+}
+
+func (g *Game) popOutInColumn(column int) error {
+	if column < 0 || column >= g.config.Width {
+		return fmt.Errorf("Column out of range. The grid only consists of %d columns.", g.config.Width)
+	}
+
+	if g.grid[g.config.Height-1][column].Color != g.currentTurn {
+		return fmt.Errorf("You can only pop out your own discs.")
+	}
+
+	for row := g.config.Height - 1; row > 0; row-- {
+		g.grid[row][column].Color = g.grid[row-1][column].Color
+	}
+
+	g.grid[0][column].Color = ColorNone
+	return nil
 }
 
 func (g *Game) checkDone() bool {
@@ -236,14 +283,22 @@ func (g *Game) handleCommand(origin *cg.Player, cmd cg.Command) {
 		return
 	}
 	switch cmd.Name {
-	case DropTokenCmd:
-		var data DropTokenCmdData
+	case DropDiscCmd:
+		var data DropDiscCmdData
 		err := cmd.UnmarshalData(&data)
 		if err != nil {
 			origin.Log.ErrorData(cmd, "invalid command data")
 			return
 		}
-		g.dropToken(origin, data)
+		g.dropDisc(origin, data)
+	case PopOutCmd:
+		var data PopOutCmdData
+		err := cmd.UnmarshalData(&data)
+		if err != nil {
+			origin.Log.ErrorData(cmd, "invalid command data")
+			return
+		}
+		g.popOutDisc(origin, data)
 	default:
 		origin.Log.ErrorData(cmd, fmt.Sprintf("unexpected command: %s", cmd.Name))
 	}
